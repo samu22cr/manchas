@@ -1,2 +1,2 @@
 # portafilio-website
-A website portafolio written from scratch, literally
+A portfolio website written from scratch, literally
