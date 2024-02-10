@@ -1,6 +1,6 @@
 build:
-	gcc -o out/build/portafolio ./src/*.c
+	gcc -o out/build/portfolio ./src/*.c
 run:
 	./out/build/portafolio
 clean:
-	rm ./out/build/portafolio
+	rm ./out/build/portfolio
