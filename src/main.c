@@ -80,29 +80,29 @@ void bind_server(ServerContext *ctx) {
     for (tmp_serv_info = serv_info; tmp_serv_info != NULL;
          tmp_serv_info = tmp_serv_info->ai_next) {
 
-        char serv_addrbuff[INET6_ADDRSTRLEN]; 
+        char serv_addr_buff[INET6_ADDRSTRLEN]; 
         uint16_t serv_port = netu_ntopp(tmp_serv_info->ai_addr);
         inet_ntop(
             tmp_serv_info->ai_family,
-            to_in_addr(tmp_serv_info->ai_addr), serv_addrbuff,
-            sizeof serv_addrbuff
+            to_in_addr(tmp_serv_info->ai_addr), serv_addr_buff,
+            sizeof serv_addr_buff
         );
-        log_debug("Trying to link socket [%s:%d]", serv_addrbuff, serv_port);
+        log_debug("Trying to link socket [%s:%d]", serv_addr_buff, serv_port);
         ctx->serv_sockfd = socket(
             serv_info->ai_family, serv_info->ai_socktype, serv_info->ai_protocol
         );
         if (ctx->serv_sockfd == -1) {
             char *errmsg = strerror(errno);
             log_debug(
-                "Couldn't link socket [%s], trying again...",
-                "some-ip:some-port"
+                "Couldn't link socket [%s:%d], trying again...",
+                serv_addr_buff, serv_port
             );
             log_debug("%s: %s", "socket", errmsg);
             continue;
         }
 
         log_debug(
-            "Setting SO_REUSEADDR option to socket [%s]", "some-ip:some-port"
+            "Setting SO_REUSEADDR option to socket [%s:%d]", "some-ip:some-port"
         );
         int yes = 1;
         int status_setsockopt = setsockopt(
@@ -110,7 +110,7 @@ void bind_server(ServerContext *ctx) {
         );
         if (status_setsockopt == -1) {
             char *errmsg = strerror(errno);
-            log_debug("Couldn't set SO_REUSEADDR option to socket [%s], trying "
+            log_debug("Couldn't set SO_REUSEADDR option to socket [%s:%d], trying "
                       "again..."
                       "some-ip:some-port");
             log_debug("%s: %s", "socket", errmsg);
@@ -124,7 +124,7 @@ void bind_server(ServerContext *ctx) {
         if (status_bind == -1) {
             char *errmsg = strerror(errno);
             log_debug(
-                "Couldn't bind socket [%s], trying again... ",
+                "Couldn't bind socket [%s:%d], trying again... ",
                 "some-ip:some-port"
             );
             log_debug("%s: %s", "socket", errmsg);

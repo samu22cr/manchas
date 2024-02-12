@@ -1,4 +1,3 @@
-
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -46,6 +45,14 @@ char *netu_ntop(const struct sockaddr *sa, char *s, size_t len) {
     return s;
 }
 
+/**
+ * @brief network to printable socket
+ *
+ * @param sa 
+ * @param buf 
+ * @param len 
+ * @return 
+ */
 char *netu_ntops(struct sockaddr *sa, char *buf, int len) {
 
     uint16_t serv_port = netu_ntopp(sa);
