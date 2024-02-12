@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -34,8 +35,9 @@ char *netu_ntop(const struct sockaddr *sa, char *s, size_t len) {
             inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), s, len);
             break;
         case AF_INET6:
-            inet_ntop(AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s,
-                      len);
+            inet_ntop(
+                AF_INET6, &(((struct sockaddr_in6 *)sa)->sin6_addr), s, len
+            );
             break;
         default:
             strncpy(s, "Unknown AF", len);
@@ -43,3 +45,13 @@ char *netu_ntop(const struct sockaddr *sa, char *s, size_t len) {
     }
     return s;
 }
+
+char *netu_ntops(struct sockaddr *sa, char *buf, int len) {
+
+    uint16_t serv_port = netu_ntopp(sa);
+    char serv_addr_buf[INET6_ADDRSTRLEN]; 
+    snprintf(buf, len, "%s:%d\n", serv_addr_buf, serv_port);
+
+    return buf;
+}
+
