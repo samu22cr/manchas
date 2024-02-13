@@ -20,4 +20,10 @@ uint16_t netu_ntopp(struct sockaddr *sa);
 */
 char *netu_ntop(const struct sockaddr *sa, char *s, size_t len);
 
+/*
+* Converts a socket to an internet socket, either an ipv4 socket
+* or an ipv6 one
+*/
+void *netu_stoin(struct sockaddr *sa);
+
 #endif // !NETU_H

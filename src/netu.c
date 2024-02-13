@@ -45,20 +45,37 @@ char *netu_ntop(const struct sockaddr *sa, char *s, size_t len) {
     return s;
 }
 
+
+/**
+ * @brief socket to internet socket, converts
+ * to a more specific type of socket (ipv4 or
+ * ipv6 socket)
+ *
+ * @param sa socket to convert from
+ */
+void *netu_stoin(struct sockaddr *sa) {
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in *)sa)->sin_addr);
+    }
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
 /**
  * @brief network to printable socket
  *
- * @param sa 
- * @param buf 
- * @param len 
- * @return 
+ * @param sa
+ * @param buf
+ * @param len
+ * @return
  */
 char *netu_ntops(struct sockaddr *sa, char *buf, int len) {
 
     uint16_t serv_port = netu_ntopp(sa);
-    char serv_addr_buf[INET6_ADDRSTRLEN]; 
+    char serv_addr_buf[INET6_ADDRSTRLEN];
+    inet_ntop(
+        sa->sa_family, netu_stoin(sa),
+        serv_addr_buf, sizeof serv_addr_buf
+    );
     snprintf(buf, len, "%s:%d\n", serv_addr_buf, serv_port);
-
     return buf;
 }
-

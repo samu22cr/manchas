@@ -51,13 +51,6 @@ void log_latest_errno_and_exit(const char *const label) {
     exit(EXIT_FAILURE);
 }
 
-void *to_in_addr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in *)sa)->sin_addr);
-    }
-    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
-}
-
 typedef struct {
     struct addrinfo *serv_info;
     int serv_sockfd;
@@ -80,12 +73,11 @@ void bind_server(ServerContext *ctx) {
     for (tmp_serv_info = serv_info; tmp_serv_info != NULL;
          tmp_serv_info = tmp_serv_info->ai_next) {
 
-        char serv_addr_buff[INET6_ADDRSTRLEN]; 
+        char serv_addr_buff[INET6_ADDRSTRLEN];
         uint16_t serv_port = netu_ntopp(tmp_serv_info->ai_addr);
         inet_ntop(
-            tmp_serv_info->ai_family,
-            to_in_addr(tmp_serv_info->ai_addr), serv_addr_buff,
-            sizeof serv_addr_buff
+            tmp_serv_info->ai_family, netu_stoin(tmp_serv_info->ai_addr),
+            serv_addr_buff, sizeof serv_addr_buff
         );
         log_debug("Trying to link socket [%s:%d]", serv_addr_buff, serv_port);
         ctx->serv_sockfd = socket(
@@ -94,8 +86,8 @@ void bind_server(ServerContext *ctx) {
         if (ctx->serv_sockfd == -1) {
             char *errmsg = strerror(errno);
             log_debug(
-                "Couldn't link socket [%s:%d], trying again...",
-                serv_addr_buff, serv_port
+                "Couldn't link socket [%s:%d], trying again...", serv_addr_buff,
+                serv_port
             );
             log_debug("%s: %s", "socket", errmsg);
             continue;
@@ -110,9 +102,11 @@ void bind_server(ServerContext *ctx) {
         );
         if (status_setsockopt == -1) {
             char *errmsg = strerror(errno);
-            log_debug("Couldn't set SO_REUSEADDR option to socket [%s:%d], trying "
-                      "again..."
-                      "some-ip:some-port");
+            log_debug(
+                "Couldn't set SO_REUSEADDR option to socket [%s:%d], trying "
+                "again..."
+                "some-ip:some-port"
+            );
             log_debug("%s: %s", "socket", errmsg);
             close(ctx->serv_sockfd);
             continue;
@@ -158,7 +152,7 @@ int main(void) {
     char serv_addrbuff[INET6_ADDRSTRLEN];
     uint16_t serv_port = netu_ntopp(serv_ctx.serv_info->ai_addr);
     inet_ntop(
-        serv_ctx.serv_info->ai_family, to_in_addr(serv_ctx.serv_info->ai_addr),
+        serv_ctx.serv_info->ai_family, netu_stoin(serv_ctx.serv_info->ai_addr),
         serv_addrbuff, sizeof serv_addrbuff
     );
     log_info("Listening for requests at %s:%d", serv_addrbuff, serv_port);
@@ -177,7 +171,7 @@ int main(void) {
         }
         char client_addrbuff[INET6_ADDRSTRLEN];
         inet_ntop(
-            client_addr.ss_family, to_in_addr((struct sockaddr *)&client_addr),
+            client_addr.ss_family, netu_stoin((struct sockaddr *)&client_addr),
             client_addrbuff, sizeof client_addrbuff
         );
         uint16_t client_port = netu_ntopp((struct sockaddr *)&client_addr);
@@ -194,4 +188,4 @@ int main(void) {
 
     close(serv_sockfd);
 }
-    // test
+// test
