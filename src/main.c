@@ -1,3 +1,4 @@
+#include "http.h"
 #include "log.h"
 #include "netu.h"
 #include <arpa/inet.h>
@@ -73,54 +74,42 @@ void bind_server(ServerContext *ctx) {
     for (tmp_serv_info = serv_info; tmp_serv_info != NULL;
          tmp_serv_info = tmp_serv_info->ai_next) {
 
-        char serv_addr_buff[INET6_ADDRSTRLEN];
-        uint16_t serv_port = netu_ntopp(tmp_serv_info->ai_addr);
-        inet_ntop(
-            tmp_serv_info->ai_family, netu_stoin(tmp_serv_info->ai_addr),
-            serv_addr_buff, sizeof serv_addr_buff
-        );
-        log_debug("Trying to link socket [%s:%d]", serv_addr_buff, serv_port);
-        ctx->serv_sockfd = socket(
-            serv_info->ai_family, serv_info->ai_socktype, serv_info->ai_protocol
-        );
+        char print_sock_buf[NETU_PRINTSOCK_STRLEN];
+        netu_ntops(tmp_serv_info->ai_addr, print_sock_buf,
+                   sizeof print_sock_buf);
+
+        log_debug("Trying to link socket [%s]", print_sock_buf);
+        ctx->serv_sockfd = socket(serv_info->ai_family, serv_info->ai_socktype,
+                                  serv_info->ai_protocol);
         if (ctx->serv_sockfd == -1) {
             char *errmsg = strerror(errno);
-            log_debug(
-                "Couldn't link socket [%s:%d], trying again...", serv_addr_buff,
-                serv_port
-            );
+            log_debug("Couldn't link socket [%s], trying again...",
+                      print_sock_buf);
             log_debug("%s: %s", "socket", errmsg);
             continue;
         }
 
-        log_debug(
-            "Setting SO_REUSEADDR option to socket [%s:%d]", "some-ip:some-port"
-        );
+        log_debug("Setting SO_REUSEADDR option to socket [%s]", print_sock_buf);
         int yes = 1;
-        int status_setsockopt = setsockopt(
-            ctx->serv_sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes
-        );
+        int status_setsockopt = setsockopt(ctx->serv_sockfd, SOL_SOCKET,
+                                           SO_REUSEADDR, &yes, sizeof yes);
         if (status_setsockopt == -1) {
             char *errmsg = strerror(errno);
-            log_debug(
-                "Couldn't set SO_REUSEADDR option to socket [%s:%d], trying "
-                "again..."
-                "some-ip:some-port"
-            );
+            log_debug("Couldn't set SO_REUSEADDR option to socket [%s], trying "
+                      "again...",
+                      print_sock_buf);
             log_debug("%s: %s", "socket", errmsg);
             close(ctx->serv_sockfd);
             continue;
         }
 
-        log_debug("Binding socket [%s]", "some-ip:some-port");
+        log_debug("Binding socket [%s]", print_sock_buf);
         int status_bind =
             bind(ctx->serv_sockfd, serv_info->ai_addr, serv_info->ai_addrlen);
         if (status_bind == -1) {
             char *errmsg = strerror(errno);
-            log_debug(
-                "Couldn't bind socket [%s:%d], trying again... ",
-                "some-ip:some-port"
-            );
+            log_debug("Couldn't bind socket [%s], trying again... ",
+                      print_sock_buf);
             log_debug("%s: %s", "socket", errmsg);
             close(ctx->serv_sockfd);
             continue;
@@ -149,43 +138,33 @@ int main(void) {
     if (status_listen == -1) {
         log_latest_errno_and_exit("listen");
     }
-    char serv_addrbuff[INET6_ADDRSTRLEN];
-    uint16_t serv_port = netu_ntopp(serv_ctx.serv_info->ai_addr);
-    inet_ntop(
-        serv_ctx.serv_info->ai_family, netu_stoin(serv_ctx.serv_info->ai_addr),
-        serv_addrbuff, sizeof serv_addrbuff
-    );
-    log_info("Listening for requests at %s:%d", serv_addrbuff, serv_port);
+
+    char server_sock_buf[NETU_PRINTSOCK_STRLEN];
+    netu_ntops(serv_ctx.serv_info->ai_addr, server_sock_buf,
+               sizeof server_sock_buf);
+    log_info("Listening for requests at [%s]", server_sock_buf);
+
     freeaddrinfo(serv_ctx.serv_info); // allocated in bind_server()
     struct sockaddr_storage client_addr;
     socklen_t client_addr_size = sizeof client_addr;
-
     while (1) {
-        int client_sockfd = accept(
-            serv_sockfd, (struct sockaddr *)&client_addr, &client_addr_size
-        );
+        int client_sockfd = accept(serv_sockfd, (struct sockaddr *)&client_addr,
+                                   &client_addr_size);
         if (client_sockfd == -1) {
             char *errmsg = strerror(errno);
             log_warning("%s: %s", "accept", errmsg);
             continue;
         }
-        char client_addrbuff[INET6_ADDRSTRLEN];
-        inet_ntop(
-            client_addr.ss_family, netu_stoin((struct sockaddr *)&client_addr),
-            client_addrbuff, sizeof client_addrbuff
-        );
-        uint16_t client_port = netu_ntopp((struct sockaddr *)&client_addr);
-        log_info("got connection from: %s:%d", client_addrbuff, client_port);
-
-        // do whatever with connection
-#define RECV_BUFF_SIZE 128
-        char recv_buff[RECV_BUFF_SIZE];
-        int bytes_read = recv(client_sockfd, recv_buff, sizeof(recv_buff), 0);
-        log_info("received http req:\n%s", recv_buff);
-
+        char client_sock_buf[NETU_PRINTSOCK_STRLEN];
+        netu_ntops((struct sockaddr *)&client_addr, client_sock_buf,
+                   sizeof client_sock_buf);
+        log_info("Got connection from: [%s]", client_sock_buf);
+        log_debug("parsing req...");
+        struct HttpRequest req;
+        http_parse_req(&req, client_sockfd);
+        log_debug("finished parsing mf...");
         close(client_sockfd);
     }
-
     close(serv_sockfd);
 }
 // test
